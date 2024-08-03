@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV Analysis App</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #8eebaa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.8);
+            margin: 5% auto;
+            padding: 20px;
+            width: 80%;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #444;
+        }
+
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #47c447;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #6fd16f;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+            vertical-align: top;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            border-bottom: 1px solid #ddd;
+        }
+
+        table thead th {
+            border-top: 2px solid #ddd;
+        }
+
+        /* Ensure consistent column widths */
+        th, td {
+            width: 50%; /* Adjust this value if you have more columns or different needs */
+        }
+
+        img {
+            display: block;
+            margin: 10px auto; /* Add space between each image */
+            max-width: 100%;
+            height: auto;
+        }
+
+        .plots {
+            text-align: center;
+        }
+
+        .analysis-table {
+            margin-bottom: 20px;
+        }
+
+        .buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .buttons button {
+            padding: 10px 20px;
+            background-color: #3bc53b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .buttons button:hover {
+            background-color: #53b853;
+        }
+
+        .content {
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        .question-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .question-box input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .question-box button {
+            padding: 10px 20px;
+            background-color: #47be47;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .question-box button:hover {
+            background-color: #51b151;
+        }
+
+        .answers {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        function showContent(id) {
+            var contents = document.querySelectorAll('.content');
+            contents.forEach(function(content) {
+                content.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+        }
+
+        function askQuestion() {
+            var question = document.getElementById('question').value;
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'question=' + encodeURIComponent(question)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('answer').innerText = data.answer;
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV Analysis App</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <input type="submit" value="Upload">
+        </form>
+
+        <div class="buttons">
+            <button onclick="showContent('analysis-results')">Statistical Analysis Results</button>
+            <button onclick="showContent('plots')">Plots</button>
+            <button onclick="showContent('question-box')">Ask a Question</button>
+        </div>
+
+        {% if analysis %}
+        <div id="analysis-results" class="content">
+            <h2>Statistical Analysis Results</h2>
+            {% if analysis.mean %}
+            <h3>Mean</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Mean</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in analysis.mean.items() %}
+                    <tr>
+                        <td>{{ feature }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if analysis.median %}
+            <h3>Median</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Median</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in analysis.median.items() %}
+                    <tr>
+                        <td>{{ feature }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if analysis.mode %}
+            <h3>Mode</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Mode</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in analysis.mode.items() %}
+                    <tr>
+                        <td>{{ feature }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if analysis.std_deviation %}
+            <h3>Standard Deviation</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Standard Deviation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in analysis.std_deviation.items() %}
+                    <tr>
+                        <td>{{ feature }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if analysis.correlation %}
+            <h3>Correlation</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Correlation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in analysis.correlation.items() %}
+                    <tr>
+                        <td>{{ feature }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if hist_file or scatter_file or line_file %}
+        <div id="plots" class="content {% if not analysis %}active{% endif %}">
+            <h2>Plots</h2>
+            <div class="plots">
+                {% if hist_file %}
+                <h3>Histogram</h3>
+                <img src="{{ hist_file }}" alt="Histogram">
+                {% endif %}
+
+                {% if scatter_file %}
+                <h3>Scatter Plot</h3>
+                <img src="{{ scatter_file }}" alt="Scatter Plot">
+                {% endif %}
+
+                {% if line_file %}
+                <h3>Line Plot</h3>
+                <img src="{{ line_file }}" alt="Line Plot">
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="question-box" class="content question-box">
+            <h2>Ask a Question</h2>
+            <input type="text" id="question" placeholder="Enter your question...">
+            <button onclick="askQuestion()">Ask</button>
+            <div class="answers">
+                <p id="answer"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
